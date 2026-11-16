@@ -1,0 +1,93 @@
+
+import os
+import subprocess
+import sys
+
+def process_management():
+    print("\n--- Process Management ---")
+
+    if len(sys.argv) > 1 and sys.argv[1] == "child":
+        print("Child Process")
+        print("Child PID :", os.getpid())
+        print("Parent PID :", os.getppid())
+        return
+
+    print("Parent Process")
+    print("Parent PID :", os.getpid())
+
+    subprocess.run([
+        sys.executable,
+        os.path.abspath(__file__),
+        "child"
+    ])
+
+    print("Child process completed.")
+
+
+def file_management():
+    print("\n--- File Management ---")
+    filename = "sample.txt"
+
+    fd = os.open(
+        filename,
+        os.O_CREAT | os.O_RDWR | os.O_TRUNC,
+        0o644
+    )
+
+    print("File opened successfully.")
+
+    data = b"Hello, this is UNIX file management."
+    os.write(fd, data)
+    print("Data written successfully.")
+
+    os.lseek(fd, 0, os.SEEK_SET)
+    read_data = os.read(fd, 100)
+
+    print("Data read from file:")
+    print(read_data.decode())
+
+    os.close(fd)
+    print("File closed successfully.")
+
+
+def input_output():
+    print("\n--- Input/Output System Calls ---")
+    message = input("Enter a message: ")
+    output = "You entered: " + message + "\n"
+    print(output, end="")
+
+
+def main():
+    while True:
+        print("\n========== UNIX SYSTEM CALLS ==========")
+        print("1. Process Management")
+        print("2. File Management")
+        print("3. Input/Output")
+        print("4. Exit")
+
+        try:
+            choice = int(input("Enter your choice: "))
+        except ValueError:
+            print("Please enter a valid number.")
+            continue
+
+        if choice == 1:
+            process_management()
+        elif choice == 2:
+            file_management()
+        elif choice == 3:
+            input_output()
+        elif choice == 4:
+            print("Program terminated.")
+            break
+        else:
+            print("Invalid choice!")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "child":
+        print("Child Process")
+        print("Child PID :", os.getpid())
+        print("Parent PID :", os.getppid())
+    else:
+        main()
