@@ -1,0 +1,190 @@
+
+from collections import deque
+
+class Process:
+    def __init__(self, pid, arrival_time, burst_time):
+        self.pid = pid
+        self.arrival_time = arrival_time
+        self.burst_time = burst_time
+        self.remaining_time = burst_time
+        self.completion_time = 0
+        self.turnaround_time = 0
+        self.waiting_time = 0
+
+
+def round_robin_scheduling(processes, quantum):
+    processes.sort(key=lambda x: x.arrival_time)
+
+    ready_queue = deque()
+    current_time = 0
+    completed = 0
+    n = len(processes)
+    in_queue = [False] * n
+
+    print("\n--- Execution Timeline ---")
+
+    while completed < n:
+        if not ready_queue:
+            next_arrival = min(
+                p.arrival_time
+                for i, p in enumerate(processes)
+                if p.remaining_time > 0 and not in_queue[i]
+            )
+
+            current_time = max(current_time, next_arrival)
+
+            for i in range(n):
+                if (processes[i].arrival_time <= current_time
+                    and not in_queue[i]
+                    and processes[i].remaining_time > 0):
+                    ready_queue.append(i)
+                    in_queue[i] = True
+
+        idx = ready_queue.popleft()
+        p = processes[idx]
+
+        execution_time = min(p.remaining_time, quantum)
+
+        print(
+            f"Time {current_time}: Process P{p.pid} "
+            f"executes for {execution_time} units."
+        )
+
+        current_time += execution_time
+        p.remaining_time -= execution_time
+
+        for i in range(n):
+            if (processes[i].arrival_time <= current_time
+                and not in_queue[i]
+                and processes[i].remaining_time > 0):
+                ready_queue.append(i)
+                in_queue[i] = True
+
+        if p.remaining_time > 0:
+            ready_queue.append(idx)
+        else:
+            p.completion_time = current_time
+            p.turnaround_time = p.completion_time - p.arrival_time
+            p.waiting_time = p.turnaround_time - p.burst_time
+            completed += 1
+
+    print("\n" + "=" * 70)
+    print(
+        f"{'PID':<8}{'Arrival':<10}{'Burst':<8}"
+        f"{'Complete':<10}{'Turnaround':<12}{'Waiting':<8}"
+    )
+    print("=" * 70)
+
+    total_tat = sum(p.turnaround_time for p in processes)
+    total_wt = sum(p.waiting_time for p in processes)
+
+    for p in sorted(processes, key=lambda x: x.pid):
+        print(
+            f"P{p.pid:<7}{p.arrival_time:<10}{p.burst_time:<8}"
+            f"{p.completion_time:<10}{p.turnaround_time:<12}"
+            f"{p.waiting_time:<8}"
+        )
+
+    print("=" * 70)
+    print(f"Average Turnaround Time: {total_tat / n:.2f}")
+    print(f"Average Waiting Time: {total_wt / n:.2f}")
+
+
+if __name__ == "__main__":
+    process_list = [
+        Process(1, 0, 5),
+        Process(2, 1, 4),
+        Process(3, 2, 2),
+        Process(4, 4, 1)
+    ]
+
+    round_robin_scheduling(process_list, quantum=2)
+
+def priority_scheduling(processes):
+    n = len(processes)
+    completed = []
+    current_time = 0
+    ready_queue = []
+    remaining_processes = processes.copy()
+
+    while len(completed) < n:
+        arrived = [
+            p for p in remaining_processes
+            if p["arrival"] <= current_time
+        ]
+
+        for p in arrived:
+            ready_queue.append(p)
+            remaining_processes.remove(p)
+
+        if not ready_queue:
+            if remaining_processes:
+                current_time = min(
+                    p["arrival"] for p in remaining_processes
+                )
+            continue
+
+        ready_queue.sort(
+            key=lambda x: (x["priority"], x["arrival"])
+        )
+
+        current_process = ready_queue.pop(0)
+
+        start_time = current_time
+        completion_time = start_time + current_process["burst"]
+
+        turnaround_time = (
+            completion_time - current_process["arrival"]
+        )
+
+        waiting_time = (
+            turnaround_time - current_process["burst"]
+        )
+
+        completed.append({
+            "id": current_process["id"],
+            "arrival": current_process["arrival"],
+            "burst": current_process["burst"],
+            "priority": current_process["priority"],
+            "completion": completion_time,
+            "turnaround": turnaround_time,
+            "waiting": waiting_time
+        })
+
+        current_time = completion_time
+
+    print(
+        f"{'Process':<10}{'Arrival':<10}{'Burst':<10}"
+        f"{'Priority':<10}{'Exit':<10}"
+        f"{'Turnaround':<12}{'Waiting':<8}"
+    )
+
+    print("-" * 72)
+
+    total_tat = 0
+    total_wt = 0
+
+    for p in completed:
+        print(
+            f"{p['id']:<10}{p['arrival']:<10}"
+            f"{p['burst']:<10}{p['priority']:<10}"
+            f"{p['completion']:<10}{p['turnaround']:<12}"
+            f"{p['waiting']:<8}"
+        )
+
+        total_tat += p["turnaround"]
+        total_wt += p["waiting"]
+
+    print("-" * 72)
+    print(f"Average Turnaround Time: {total_tat / n:.2f}")
+    print(f"Average Waiting Time: {total_wt / n:.2f}")
+
+
+example_processes = [
+    {"id": "P1", "arrival": 0, "burst": 4, "priority": 2},
+    {"id": "P2", "arrival": 1, "burst": 3, "priority": 1},
+    {"id": "P3", "arrival": 2, "burst": 1, "priority": 4},
+    {"id": "P4", "arrival": 3, "burst": 5, "priority": 3}
+]
+
+priority_scheduling(example_processes)
